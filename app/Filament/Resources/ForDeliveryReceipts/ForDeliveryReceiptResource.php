@@ -19,6 +19,18 @@ class ForDeliveryReceiptResource extends Resource
     protected static ?string $model = ForDeliveryReceipt::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+    
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::where('status', 'pending')->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger'; // red
+    }
 
     public static function getNavigationGroup(): ?string
     {
