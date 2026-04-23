@@ -10,6 +10,7 @@
    Typography: Inter + JetBrains Mono
    System: Semantic tokens, full light/dark parity
    Fix: Sidebar active state — single indicator, no double-active
+   Fix: Modal + footer buttons — auto width, no overlap, no clip
 ============================================================= */
 
 /* ─────────────────────────────────────────
@@ -49,7 +50,7 @@
     --fi-text-inverse:      #ffffff;
     --fi-text-accent:       rgb(79, 70, 229);
 
-    /* Shadows — very subtle, professional */
+    /* Shadows */
     --fi-shadow-xs:  0 1px 2px rgba(17, 24, 39, 0.04);
     --fi-shadow-sm:  0 1px 3px rgba(17, 24, 39, 0.06), 0 1px 2px rgba(17, 24, 39, 0.04);
     --fi-shadow-md:  0 4px 8px rgba(17, 24, 39, 0.06), 0 2px 4px rgba(17, 24, 39, 0.04);
@@ -235,9 +236,6 @@ label,
 
 /* ─────────────────────────────────────────
    SIDEBAR
-   FIX: Single active state — pill bg only.
-   No ::before stripe, no border-left, no
-   duplicate selectors. One rule wins.
 ───────────────────────────────────────── */
 .fi-sidebar {
     background: var(--fi-surface-elevated);
@@ -281,12 +279,10 @@ label,
 }
 
 .fi-sidebar-item {
-    margin: 0; /* top/bottom + left/right */
+    margin: 0;
 }
 
-/* ── Button — default ──
-   Hard reset: no backgrounds, no borders,
-   no pseudo-elements from parent rules     */
+/* ── Button — default ── */
 .fi-sidebar-item-btn,
 .fi-sidebar-item > a {
     display: flex;
@@ -334,13 +330,7 @@ label,
     letter-spacing: -0.005em;
 }
 
-/* ── ACTIVE STATE ──────────────────────────
-   Single rule. Pill background + accent text.
-   Uses !important to beat Filament core rules.
-   No border-left, no pseudo-element, no badge.
-   Both .fi-active class and aria-current attr
-   are covered so Livewire navigation works.
-───────────────────────────────────────── */
+/* ── ACTIVE STATE ── */
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
 .fi-sidebar-item.fi-active > a,
 .fi-sidebar-item > [aria-current="page"],
@@ -358,14 +348,12 @@ label,
     opacity: 1 !important;
 }
 
-/* Stripe accent via inset left box-shadow — no layout shift */
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
 .fi-sidebar-item.fi-active > a,
 .fi-sidebar-item > [aria-current="page"] {
     box-shadow: inset 2px 0 0 rgb(var(--color-primary-500)) !important;
 }
 
-/* Suppress any Filament-generated active badge on nav items */
 .fi-sidebar-item.fi-active .fi-sidebar-item-button-badge,
 .fi-sidebar-item.fi-active .fi-badge {
     display: none !important;
@@ -813,16 +801,23 @@ label,
 
 /* ─────────────────────────────────────────
    MODAL / DIALOG
+   Auto-sizes to content, buttons never clip
 ───────────────────────────────────────── */
 .fi-modal-window {
     background: var(--fi-surface-overlay);
     border-radius: var(--fi-radius-xl);
     border: 1px solid var(--fi-border);
     box-shadow: var(--fi-shadow-xl);
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 90vh;
+
+    /* Auto width — expands to fit content, capped sensibly */
+    width: auto !important;
+    min-width: min(22rem, calc(100vw - 2rem)) !important;
+    max-width: min(90vw, 42rem) !important;
+    box-sizing: border-box !important;
 }
 
 .fi-modal-header {
@@ -857,16 +852,112 @@ label,
     overscroll-behavior: contain;
 }
 
+/* ─────────────────────────────────────────
+   MODAL FOOTER
+   Targets footer + any nested wrapper divs
+   so gap always applies to the buttons
+───────────────────────────────────────── */
 .fi-modal-footer {
-    padding: 0.875rem 1.5rem;
-    border-top: 1px solid var(--fi-border);
-    background: var(--fi-surface-sunken);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    flex-shrink: 0;
-    border-radius: 0 0 var(--fi-radius-xl) var(--fi-radius-xl);
+    padding: 1rem 1.5rem !important;
+    border-top: 1px solid var(--fi-border) !important;
+    background: var(--fi-surface-sunken) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+    gap: 0.625rem !important;
+    flex-shrink: 0 !important;
+    border-radius: 0 0 var(--fi-radius-xl) var(--fi-radius-xl) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+}
+
+/* Target any intermediate wrapper div Filament inserts */
+.fi-modal-footer > div {
+    display: contents !important; /* collapses wrapper so gap works on buttons directly */
+}
+
+/* All buttons inside footer — auto width, never clip or overlap */
+.fi-modal-footer .fi-btn,
+.fi-modal-footer [type="button"],
+.fi-modal-footer [type="submit"],
+.fi-modal-footer button {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 0.5rem 1.25rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    border-radius: var(--fi-radius-md) !important;
+    box-sizing: border-box !important;
+    position: static !important;
+    margin: 0 !important;
+}
+
+/* ── Cancel / gray button ── */
+.fi-modal-footer .fi-btn-color-gray,
+.fi-modal-footer [data-color="gray"] {
+    background: var(--fi-surface-elevated) !important;
+    color: var(--fi-text-primary) !important;
+    border: 1px solid var(--fi-border-strong) !important;
+    box-shadow: var(--fi-shadow-xs) !important;
+}
+
+.fi-modal-footer .fi-btn-color-gray:hover,
+.fi-modal-footer [data-color="gray"]:hover {
+    background: var(--fi-surface-hover) !important;
+    border-color: rgb(var(--color-primary-300)) !important;
+}
+
+.dark .fi-modal-footer .fi-btn-color-gray:hover,
+.dark .fi-modal-footer [data-color="gray"]:hover {
+    border-color: rgb(var(--color-primary-700)) !important;
+}
+
+/* ── Confirm buttons ── */
+.fi-modal-footer .fi-btn-color-success,
+.fi-modal-footer .fi-btn-color-primary,
+.fi-modal-footer .fi-btn-color-danger,
+.fi-modal-footer .fi-btn-color-warning {
+    padding: 0.5rem 1.375rem !important;
+}
+
+/* ─────────────────────────────────────────
+   CONFIRMATION MODAL CONTENT
+───────────────────────────────────────── */
+.fi-simple-modal-content,
+.fi-modal-window [role="dialog"] > .fi-modal-content:only-child {
+    padding: 2rem 1.75rem 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0.625rem !important;
+}
+
+.fi-modal-heading {
+    font-size: 1.0625rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em !important;
+    color: var(--fi-text-primary) !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+}
+
+.fi-modal-description {
+    font-size: 0.875rem !important;
+    color: var(--fi-text-secondary) !important;
+    line-height: 1.6 !important;
+    max-width: 22rem !important;
+    margin: 0 auto !important;
 }
 
 .fi-modal-overlay {

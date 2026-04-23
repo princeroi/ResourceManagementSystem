@@ -57,7 +57,7 @@ class Asset extends Model
     }
 
     /** Currently active assignment (no returned_date yet) */
-    public function currentAssignment(): HasOne
+    public function activeAssignment(): HasOne
     {
         return $this->hasOne(AssetAssignment::class, 'asset_id')
             ->whereNull('returned_date')

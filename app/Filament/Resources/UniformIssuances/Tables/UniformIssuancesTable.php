@@ -1745,7 +1745,7 @@ class UniformIssuancesTable
                     ->icon('heroicon-o-banknotes')
                     ->modalWidth('4xl')
                     ->visible(function ($record) {
-                        if (!in_array($record->uniform_issuance_status, ['partial', 'issued'])) {
+                        if ($record->uniform_issuance_status !== 'issued') {
                             return false;
                         }
                 
@@ -2327,20 +2327,20 @@ class UniformIssuancesTable
                         if (\App\Models\UniformIssuanceBilling::where('uniform_issuance_id', $record->id)->exists()) {
                             return;
                         }
-                
+
                         $record->load(
                             'uniformIssuanceRecipient.uniformIssuanceItem.uniformItem',
                             'uniformIssuanceRecipient.uniformIssuanceItem.uniformItemVariant',
                             'uniformIssuanceRecipient.position',
                             'uniformIssuanceType'
                         );
-                
+
                         $typeName        = strtolower($record->uniformIssuanceType?->uniform_issuance_type_name ?? '');
                         $isClientBilling = !str_contains($typeName, 'salary deduct');
                         $isSalaryDeduct  = str_contains($typeName, 'salary deduct');
-                
+
                         $billingItems = json_decode($data['billing_items'] ?? '[]', true);
-                
+
                         if (!is_array($billingItems) || empty($billingItems)) {
                             \Filament\Notifications\Notification::make()
                                 ->title('No billing items')
@@ -2350,36 +2350,48 @@ class UniformIssuancesTable
                             $action->halt();
                             return;
                         }
-                
+
                         $computeTotal = fn (array $items) => array_sum(
                             array_map(fn ($i) => (float) ($i['unit_price'] ?? 0) * (int) ($i['quantity'] ?? 0), $items)
                         );
-                
+
+                        // ── Rebuild grouped + recipientMeta from recipients (same order as form) ──
                         $grouped       = [];
                         $recipientMeta = [];
-                
-                        foreach ($billingItems as $item) {
-                            $emp = $item['employee'] ?? '—';
-                            $grouped[$emp][] = $item;
-                        }
-                
+
                         foreach ($record->uniformIssuanceRecipient as $recipient) {
+                            $isReliever = strtolower($recipient->position?->position_name ?? '') === 'reliever'
+                                || strtolower($recipient->employee_status ?? '') === 'reliever';
+
+                            if ($isClientBilling && $isReliever) continue;
+
                             $name = $recipient->employee_name ?? '—';
+
                             $recipientMeta[$name] = [
                                 'employee_status' => strtolower($recipient->employee_status ?? ''),
                             ];
+
+                            // Pull this employee's items from the decoded billing_items JSON
+                            $grouped[$name] = array_values(array_filter(
+                                $billingItems,
+                                fn ($i) => ($i['employee'] ?? '') === $name
+                            ));
                         }
-                
+
+                        // Remove employees with no items
+                        $grouped = array_filter($grouped, fn ($items) => !empty($items));
+
+                        // ── Build empIndexMap matching the form's $empIndex counter ──
                         $empIndexMap = [];
                         $idx = 0;
-                        foreach ($grouped as $empName => $items) {
+                        foreach ($grouped as $empName => $_) {
                             $idx++;
                             $empIndexMap[$empName] = $idx;
                         }
-                
+
                         if ($isClientBilling) {
                             $total = $computeTotal($billingItems);
-                
+
                             $billing = \App\Models\UniformIssuanceBilling::create([
                                 'uniform_issuance_id'   => $record->id,
                                 'billed_to'             => $data['billed_to'] ?? $record->site?->site_name ?? '—',
@@ -2392,38 +2404,40 @@ class UniformIssuancesTable
                                 'created_by'            => \Illuminate\Support\Facades\Auth::id(),
                                 'signed_receiving_copy' => null,
                             ]);
-                
+
                             foreach ($grouped as $empName => $items) {
                                 $empStatus = $recipientMeta[$empName]['employee_status'] ?? '';
                                 $safeKey   = 'emp_' . ($empIndexMap[$empName] ?? 0);
-                
+
                                 if ($empStatus === 'posted') {
                                     \App\Models\BillingDr::create([
-                                        'uniform_issuance_id'          => $record->id,
-                                        'uniform_issuance_billing_id'  => $billing->id,
-                                        'employee_name'                => $empName,
-                                        'dr_number'                    => $data["dr_number_{$safeKey}"] ?? '—',
-                                        'date_signed'                  => $data["dr_date_signed_{$safeKey}"] ?? null,
-                                        'dr_image'                     => $data["dr_image_{$safeKey}"] ?? null,
-                                        'remarks'                      => $data["dr_remarks_{$safeKey}"] ?? null,
-                                        'uploaded_by'                  => \Illuminate\Support\Facades\Auth::id(),
+                                        'billable_id'     => $billing->id,
+                                        'billable_type'   => \App\Models\UniformIssuanceBilling::class,
+                                        'sourceable_id'   => $record->id,
+                                        'sourceable_type' => \App\Models\UniformIssuances::class,
+                                        'employee_name'   => $empName,
+                                        'dr_number'       => $data["dr_number_{$safeKey}"]    ?? '—',
+                                        'date_signed'     => $data["dr_date_signed_{$safeKey}"] ?? null,
+                                        'dr_image'        => $data["dr_image_{$safeKey}"]     ?? null,
+                                        'remarks'         => $data["dr_remarks_{$safeKey}"]   ?? null,
+                                        'uploaded_by'     => \Illuminate\Support\Facades\Auth::id(),
                                     ]);
                                 }
                             }
-                
+
                             \Filament\Notifications\Notification::make()
                                 ->title('Billing Created')
                                 ->body('Client billing of ₱' . number_format($total, 2) . ' saved successfully.')
                                 ->success()
                                 ->send();
-                
+
                         } elseif ($isSalaryDeduct) {
                             $count = 0;
-                
+
                             foreach ($grouped as $employeeName => $items) {
                                 $total   = $computeTotal($items);
                                 $safeKey = 'emp_' . ($empIndexMap[$employeeName] ?? 0);
-                
+
                                 $billing = \App\Models\UniformIssuanceBilling::create([
                                     'uniform_issuance_id'   => $record->id,
                                     'billed_to'             => $employeeName,
@@ -2436,29 +2450,29 @@ class UniformIssuancesTable
                                     'created_by'            => \Illuminate\Support\Facades\Auth::id(),
                                     'signed_receiving_copy' => null,
                                 ]);
-                
+
                                 \App\Models\BillingAtd::create([
-                                    'uniform_issuance_id'          => $record->id,
-                                    'uniform_issuance_billing_id'  => $billing->id,
-                                    'employee_name'                => $employeeName,
-                                    'date_signed'                  => $data["atd_date_signed_{$safeKey}"] ?? null,
-                                    'atd_image'                    => $data["atd_image_{$safeKey}"] ?? null,
-                                    'remarks'                      => $data["atd_remarks_{$safeKey}"] ?? null,
-                                    'uploaded_by'                  => \Illuminate\Support\Facades\Auth::id(),
+                                    'uniform_issuance_id'         => $record->id,
+                                    'uniform_issuance_billing_id' => $billing->id,
+                                    'employee_name'               => $employeeName,
+                                    'date_signed'                 => $data["atd_date_signed_{$safeKey}"] ?? null,
+                                    'atd_image'                   => $data["atd_image_{$safeKey}"]       ?? null,
+                                    'remarks'                     => $data["atd_remarks_{$safeKey}"]     ?? null,
+                                    'uploaded_by'                 => \Illuminate\Support\Facades\Auth::id(),
                                 ]);
-                
+
                                 $count++;
                             }
-                
+
                             \Filament\Notifications\Notification::make()
                                 ->title('Billings Created')
                                 ->body("{$count} salary deduct billing(s) created successfully.")
                                 ->success()
                                 ->send();
-                
+
                         } else {
                             $total = $computeTotal($billingItems);
-                
+
                             \App\Models\UniformIssuanceBilling::create([
                                 'uniform_issuance_id'   => $record->id,
                                 'billed_to'             => $data['billed_to'] ?? '—',
@@ -2471,7 +2485,7 @@ class UniformIssuancesTable
                                 'created_by'            => \Illuminate\Support\Facades\Auth::id(),
                                 'signed_receiving_copy' => null,
                             ]);
-                
+
                             \Filament\Notifications\Notification::make()
                                 ->title('Billing Saved')
                                 ->success()

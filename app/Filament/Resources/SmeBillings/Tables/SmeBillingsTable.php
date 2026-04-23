@@ -1,34 +1,29 @@
 <?php
 
-namespace App\Filament\Resources\UniformIssuanceBillings\Tables;
+namespace App\Filament\Resources\SmeBillings\Tables;
 
 use App\Models\Billing;
-use App\Models\UniformIssuanceBilling;
+use App\Models\SmeBilling;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Table;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
-class UniformIssuanceBillingsTable
+class SmeBillingsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(function ($query, $livewire) {
-                if (!empty($livewire->activeBillingType)) {
-                    $query->where('billing_type', $livewire->activeBillingType);
-                }
-            })
             ->columns([
-                TextColumn::make('uniformIssuance.id')
-                    ->label('Issuance #')
-                    ->numeric()
-                    ->sortable(),
+                TextColumn::make('purchaseOrder.po_number')
+                    ->label('PO Number')
+                    ->searchable()
+                    ->placeholder('—'),
 
                 TextColumn::make('billed_to')
                     ->label('Billed To')
@@ -39,14 +34,12 @@ class UniformIssuanceBillingsTable
                     ->label('Type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'client'        => 'info',
-                        'salary_deduct' => 'warning',
-                        default         => 'gray',
+                        'client' => 'info',
+                        default  => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'client'        => 'Client',
-                        'salary_deduct' => 'Salary Deduct',
-                        default         => 'Other',
+                        'client' => 'Client',
+                        default  => 'Other',
                     }),
 
                 TextColumn::make('total_price')
@@ -74,6 +67,7 @@ class UniformIssuanceBillingsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
+                    ->label('Created')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -83,55 +77,17 @@ class UniformIssuanceBillingsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->headerActions([
-                // ALL
-                Action::make('all')
-                    ->label('All')
-                    ->color('gray')
-                    ->badge(function () {
-                        $count = \App\Models\UniformIssuanceBilling::where('status', 'pending')->count();
-                        return $count > 0 ? $count : null;
-                    })
-                    ->action(function ($livewire) {
-                        $livewire->activeBillingType = null;
-                    }),
-
-                // CLIENT (DEFAULT ACTIVE)
-                Action::make('client')
-                    ->label('Client')
-                    ->color(fn ($livewire) => $livewire->activeBillingType === 'client' ? 'primary' : 'info')
-                    ->badge(function () {
-                        $count = \App\Models\UniformIssuanceBilling::where('status', 'pending')
-                            ->where('billing_type', 'client')
-                            ->count();
-
-                        return $count > 0 ? $count : null;
-                    })
-                    ->action(function ($livewire) {
-                        $livewire->activeBillingType = 'client';
-                    }),
-
-                // SALARY DEDUCT
-                Action::make('salary_deduct')
-                    ->label('Salary Deduct')
-                    ->color(fn ($livewire) => $livewire->activeBillingType === 'salary_deduct' ? 'primary' : 'warning')
-                    ->badge(function () {
-                        $count = \App\Models\UniformIssuanceBilling::where('status', 'pending')
-                            ->where('billing_type', 'salary_deduct')
-                            ->count();
-
-                        return $count > 0 ? $count : null;
-                    })
-                    ->action(function ($livewire) {
-                        $livewire->activeBillingType = 'salary_deduct';
-                    }),
-            ])
-
             ->filters([
+                SelectFilter::make('billing_type')
+                    ->options([
+                        'client' => 'Client',
+                        'other'  => 'Other',
+                    ]),
+
                 SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
-                        'billed' => 'Billed',
+                        'billed'  => 'Billed',
                     ]),
             ])
             ->recordActions([
@@ -142,34 +98,19 @@ class UniformIssuanceBillingsTable
                     ->icon('heroicon-o-eye')
                     ->color('gray')
                     ->modalWidth('3xl')
-                    ->modalHeading(fn ($record) => 'Issuance Billing — ' . ($record->billed_to ?? '—'))
-                    ->modalContent(function ($record) {
-                        $record->loadMissing(
-                            'uniformIssuance.site',
-                            'uniformIssuance.uniformIssuanceType',
-                            'creator',
-                            'billingDrs',
-                            'billingAtds'
-                        );
+                    ->modalHeading(fn (SmeBilling $record) => 'SME Billing — ' . ($record->billed_to ?? '—'))
+                    ->modalContent(function (SmeBilling $record) {
+                        $record->loadMissing('purchaseOrder', 'creator', 'billingDrs');
 
                         $billedTo    = e($record->billed_to ?? '—');
-                        $typeLabel   = match ($record->billing_type) {
-                            'client'        => 'CLIENT',
-                            'salary_deduct' => 'SALARY DEDUCT',
-                            default         => 'OTHER',
-                        };
-                        $typeBg      = match ($record->billing_type) {
-                            'client'        => '#1d4ed8',
-                            'salary_deduct' => '#7c3aed',
-                            default         => '#6b7280',
-                        };
+                        $typeLabel   = strtoupper($record->billing_type === 'client' ? 'Client' : 'Other');
+                        $typeBg      = $record->billing_type === 'client' ? '#1d4ed8' : '#6b7280';
                         $statusLabel = strtoupper($record->status);
                         $statusColor = $record->status === 'billed' ? '#16a34a' : '#d97706';
                         $total       = number_format((float) $record->total_price, 2);
                         $billedAt    = $record->billed_at?->format('F d, Y') ?? '—';
                         $createdBy   = e($record->creator?->name ?? '—');
-                        $siteName    = e($record->uniformIssuance?->site?->site_name ?? '—');
-                        $typeName    = e($record->uniformIssuance?->uniformIssuanceType?->uniform_issuance_type_name ?? '—');
+                        $poNumber    = e($record->purchaseOrder?->po_number ?? '—');
 
                         // ── Billing items ──
                         $raw   = $record->billing_items;
@@ -184,7 +125,6 @@ class UniformIssuanceBillingsTable
 
                         foreach ($items as $i => $item) {
                             $name      = e($item['item_name']  ?? '—');
-                            $employee  = e($item['employee']   ?? '—');
                             $size      = e($item['size']       ?? '—');
                             $qty       = (int)   ($item['quantity']   ?? 0);
                             $unitPrice = (float) ($item['unit_price']  ?? 0);
@@ -193,7 +133,6 @@ class UniformIssuanceBillingsTable
 
                             $itemRows .= "
                                 <tr style='background:{$bg};'>
-                                    <td style='padding:9px 14px;border-bottom:1px solid #e5e7eb;font-size:12.5px;color:#6b7280;'>{$employee}</td>
                                     <td style='padding:9px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;'>{$name}</td>
                                     <td style='padding:9px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;text-align:center;'>{$size}</td>
                                     <td style='padding:9px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;font-weight:700;text-align:center;color:#1d4ed8;'>{$qty}</td>
@@ -229,16 +168,25 @@ class UniformIssuanceBillingsTable
 
                                 $drRows .= "
                                     <tr>
-                                        <td style='padding:9px 14px;font-size:12.5px;color:#111827;border-bottom:1px solid #f1f5f9;font-weight:500;'>{$empName}</td>
-                                        <td style='padding:9px 14px;font-size:12.5px;color:#1d4ed8;font-weight:700;border-bottom:1px solid #f1f5f9;'>{$drNum}</td>
-                                        <td style='padding:9px 14px;font-size:12px;color:#374151;text-align:center;border-bottom:1px solid #f1f5f9;'>{$dateSig}</td>
-                                        <td style='padding:9px 14px;font-size:12px;color:#6b7280;border-bottom:1px solid #f1f5f9;'>{$remarks}</td>
-                                        <td style='padding:9px 14px;text-align:center;border-bottom:1px solid #f1f5f9;'>{$fileLink}</td>
+                                        <td style='padding:9px 14px;font-size:12.5px;color:#111827;border-bottom:1px solid #f1f5f9;font-weight:500;'>
+                                            {$empName}
+                                        </td>
+                                        <td style='padding:9px 14px;font-size:12.5px;color:#1d4ed8;font-weight:700;border-bottom:1px solid #f1f5f9;'>
+                                            {$drNum}
+                                        </td>
+                                        <td style='padding:9px 14px;font-size:12px;color:#374151;text-align:center;border-bottom:1px solid #f1f5f9;'>
+                                            {$dateSig}
+                                        </td>
+                                        <td style='padding:9px 14px;font-size:12px;color:#6b7280;border-bottom:1px solid #f1f5f9;'>
+                                            {$remarks}
+                                        </td>
+                                        <td style='padding:9px 14px;text-align:center;border-bottom:1px solid #f1f5f9;'>
+                                            {$fileLink}
+                                        </td>
                                     </tr>";
                             }
 
-                            $drCount = $record->billingDrs->count();
-                            $drHtml  = "
+                            $drHtml = "
                                 <div style='border:1px solid #bbf7d0;border-radius:10px;overflow:hidden;margin-bottom:16px;
                                     box-shadow:0 1px 3px rgba(0,0,0,.04);'>
                                     <div style='background:#f0fdf4;padding:10px 14px;display:flex;align-items:center;gap:8px;'>
@@ -247,16 +195,23 @@ class UniformIssuanceBillingsTable
                                             Delivery Receipts
                                         </span>
                                         <span style='background:#dcfce7;color:#166534;font-size:10px;font-weight:600;
-                                            padding:2px 8px;border-radius:999px;margin-left:4px;'>{$drCount}</span>
+                                            padding:2px 8px;border-radius:999px;margin-left:4px;'>
+                                            {$record->billingDrs->count()}
+                                        </span>
                                     </div>
                                     <table style='width:100%;border-collapse:collapse;'>
                                         <thead>
                                             <tr style='background:#f8fafc;'>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Employee</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>DR #</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Date Signed</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Remarks</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>File</th>
+                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;
+                                                    font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Employee</th>
+                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;
+                                                    font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>DR #</th>
+                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;
+                                                    font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Date Signed</th>
+                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;
+                                                    font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Remarks</th>
+                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;
+                                                    font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>File</th>
                                             </tr>
                                         </thead>
                                         <tbody>{$drRows}</tbody>
@@ -267,71 +222,6 @@ class UniformIssuanceBillingsTable
                                 <div style='padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;
                                     font-size:12px;color:#9ca3af;text-align:center;margin-bottom:16px;'>
                                     No delivery receipts attached.
-                                </div>";
-                        }
-
-                        // ── ATD records ──
-                        $atdHtml = '';
-                        if ($record->billingAtds->isNotEmpty()) {
-                            $atdRows = '';
-                            foreach ($record->billingAtds as $atd) {
-                                $empName  = e($atd->employee_name ?? '—');
-                                $dateSig  = $atd->date_signed
-                                    ? \Carbon\Carbon::parse($atd->date_signed)->format('M d, Y')
-                                    : '—';
-                                $remarks  = e($atd->remarks ?? '—');
-                                $url      = $atd->atd_image
-                                    ? route('private.image', [
-                                        'disk' => 'local',
-                                        'path' => base64_encode($atd->atd_image),
-                                    ])
-                                    : null;
-                                $fileLink = $url
-                                    ? "<a href='{$url}' target='_blank'
-                                            style='color:#7c3aed;font-size:12px;font-weight:600;text-decoration:none;
-                                                background:#f5f3ff;padding:3px 10px;border-radius:999px;border:1px solid #ddd6fe;'>
-                                            &#8599; View
-                                        </a>"
-                                    : "<span style='color:#9ca3af;font-size:12px;'>No file</span>";
-
-                                $atdRows .= "
-                                    <tr>
-                                        <td style='padding:9px 14px;font-size:12.5px;color:#111827;border-bottom:1px solid #f1f5f9;font-weight:500;'>{$empName}</td>
-                                        <td style='padding:9px 14px;font-size:12px;color:#374151;text-align:center;border-bottom:1px solid #f1f5f9;'>{$dateSig}</td>
-                                        <td style='padding:9px 14px;font-size:12px;color:#6b7280;border-bottom:1px solid #f1f5f9;'>{$remarks}</td>
-                                        <td style='padding:9px 14px;text-align:center;border-bottom:1px solid #f1f5f9;'>{$fileLink}</td>
-                                    </tr>";
-                            }
-
-                            $atdCount = $record->billingAtds->count();
-                            $atdHtml  = "
-                                <div style='border:1px solid #ddd6fe;border-radius:10px;overflow:hidden;margin-bottom:16px;
-                                    box-shadow:0 1px 3px rgba(0,0,0,.04);'>
-                                    <div style='background:#f5f3ff;padding:10px 14px;display:flex;align-items:center;gap:8px;'>
-                                        <span style='width:7px;height:7px;border-radius:50%;background:#7c3aed;display:inline-block;flex-shrink:0;'></span>
-                                        <span style='font-size:11px;font-weight:700;color:#4c1d95;text-transform:uppercase;letter-spacing:.06em;'>
-                                            ATD Documents
-                                        </span>
-                                        <span style='background:#ede9fe;color:#4c1d95;font-size:10px;font-weight:600;
-                                            padding:2px 8px;border-radius:999px;margin-left:4px;'>{$atdCount}</span>
-                                    </div>
-                                    <table style='width:100%;border-collapse:collapse;'>
-                                        <thead>
-                                            <tr style='background:#f8fafc;'>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Employee</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Date Signed</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>Remarks</th>
-                                                <th style='padding:8px 14px;font-size:10.5px;color:#6b7280;text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;'>File</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>{$atdRows}</tbody>
-                                    </table>
-                                </div>";
-                        } else {
-                            $atdHtml = "
-                                <div style='padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;
-                                    font-size:12px;color:#9ca3af;text-align:center;margin-bottom:16px;'>
-                                    No ATD documents attached.
                                 </div>";
                         }
 
@@ -347,7 +237,7 @@ class UniformIssuanceBillingsTable
                                                 {$billedTo}
                                             </div>
                                             <div style='font-size:12px;color:#93c5fd;margin-top:3px;'>
-                                                {$siteName} &nbsp;·&nbsp; {$typeName}
+                                                PO #{$poNumber}
                                             </div>
                                         </div>
                                         <div style='display:flex;gap:6px;flex-shrink:0;'>
@@ -379,9 +269,6 @@ class UniformIssuanceBillingsTable
                                 <!-- DR section -->
                                 {$drHtml}
 
-                                <!-- ATD section -->
-                                {$atdHtml}
-
                                 <!-- Items table -->
                                 <div style='border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;
                                     box-shadow:0 1px 3px rgba(0,0,0,.04);'>
@@ -398,8 +285,6 @@ class UniformIssuanceBillingsTable
                                         <thead>
                                             <tr style='background:#1e3a5f;'>
                                                 <th style='padding:8px 14px;text-align:left;font-size:10px;font-weight:700;
-                                                    color:#e0f2fe;text-transform:uppercase;letter-spacing:.05em;'>Employee</th>
-                                                <th style='padding:8px 14px;text-align:left;font-size:10px;font-weight:700;
                                                     color:#e0f2fe;text-transform:uppercase;letter-spacing:.05em;'>Item</th>
                                                 <th style='padding:8px 14px;text-align:center;font-size:10px;font-weight:700;
                                                     color:#e0f2fe;text-transform:uppercase;letter-spacing:.05em;width:70px;'>Size</th>
@@ -414,7 +299,7 @@ class UniformIssuanceBillingsTable
                                         <tbody>{$itemRows}</tbody>
                                         <tfoot>
                                             <tr style='background:#eff6ff;border-top:2px solid #93c5fd;'>
-                                                <td colspan='5' style='padding:10px 14px;font-size:12px;font-weight:600;
+                                                <td colspan='4' style='padding:10px 14px;font-size:12px;font-weight:600;
                                                     color:#374151;text-align:right;'>Grand Total</td>
                                                 <td style='padding:10px 14px;font-size:15px;font-weight:800;
                                                     color:#1d4ed8;text-align:right;'>&#x20B1;{$total}</td>
@@ -435,17 +320,16 @@ class UniformIssuanceBillingsTable
                     ->icon('heroicon-o-plus-circle')
                     ->color('primary')
                     ->visible(
-                        fn ($record): bool =>
+                        fn (SmeBilling $record): bool =>
                             $record->status === 'pending' &&
                             $record->billing_type === 'client'
                     )
                     ->form([
                         Select::make('billing_id')
                             ->label('Select Pending Billing')
-                            ->options(function ($record) {
-                                $record->loadMissing('uniformIssuance.site.client');
-
-                                $clientId = $record->uniformIssuance?->site?->client_id;
+                            ->options(function (SmeBilling $record) {
+                                // Get the client from the PO's site
+                                $clientId = $record->purchaseOrder?->site?->client_id;
 
                                 return Billing::where('status', 'pending')
                                     ->when($clientId, fn ($q) => $q->where('client_id', $clientId))
@@ -461,18 +345,18 @@ class UniformIssuanceBillingsTable
                                     ]);
                             })
                             ->native(true)
+                            ->searchable()
                             ->required()
                             ->placeholder('Choose a pending billing record')
-                            ->helperText(function ($record) {
-                                $record->loadMissing('uniformIssuance.site.client');
-                                $clientName = $record->uniformIssuance?->site?->client?->client_name;
+                            ->helperText(function (SmeBilling $record) {
+                                $clientName = $record->purchaseOrder?->site?->client?->client_name;
                                 return $clientName
                                     ? "Showing billings for client: {$clientName}"
                                     : "No client found — showing all pending billings.";
                             }),
                     ])
                     ->modalHeading('Add to Client Billing')
-                    ->modalDescription('Select a pending billing record to attach this issuance billing to.')
+                    ->modalDescription('Select a pending billing record to attach this SME billing to.')
                     ->modalSubmitActionLabel('Add to Billing')
                     ->action(function ($record, array $data): void {
                         $billing = Billing::findOrFail($data['billing_id']);
@@ -483,12 +367,13 @@ class UniformIssuanceBillingsTable
                                 'total_amount' => DB::raw('COALESCE(total_amount, 0) + ' . (float) $record->total_price),
                             ]);
 
+                        // ── Record the include log ──────────────────────────────
                         \App\Models\BillingInclude::create([
-                            'billing_id'       => $billing->id,
-                            'includeable_type' => get_class($record),
-                            'includeable_id'   => $record->id,
-                            'amount'           => $record->total_price,
-                            'label'            => $record->billed_to,
+                            'billing_id'         => $billing->id,
+                            'includeable_type'   => get_class($record),   // SmeBilling or UniformIssuanceBilling
+                            'includeable_id'     => $record->id,
+                            'amount'             => $record->total_price,
+                            'label'              => $record->billed_to,
                             'included_at'      => now(),
                         ]);
 
@@ -503,32 +388,6 @@ class UniformIssuanceBillingsTable
                             ->success()
                             ->send();
                     }),
-
-                // ─── MARK AS BILLED ───────────────────────────────────────
-                Action::make('markBilled')
-                    ->label('Mark as Billed')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(
-                        fn ($record): bool =>
-                            $record->status === 'pending' &&
-                            $record->billing_type === 'salary_deduct'
-                    )
-                    ->requiresConfirmation()
-                    ->modalHeading('Mark as Billed')
-                    ->modalDescription('Are you sure you want to mark this billing as Billed?')
-                    ->modalSubmitActionLabel('Yes, Mark as Billed')
-                    ->action(function ($record): void {
-                        $record->update([
-                            'status'    => 'billed',
-                            'billed_at' => now(),
-                        ]);
-
-                        Notification::make()
-                            ->title('Marked as Billed')
-                            ->success()
-                            ->send();
-                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -537,4 +396,4 @@ class UniformIssuanceBillingsTable
             ])
             ->defaultSort('created_at', 'desc');
     }
-}
+} 

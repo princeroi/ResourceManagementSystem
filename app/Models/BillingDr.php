@@ -3,12 +3,22 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class BillingDr extends Model
 {
+    protected $table = 'billing_dr';
     protected $fillable = [
-        'uniform_issuance_id',
-        'uniform_issuance_billing_id',
+        // Morph: the billing record (SmeBilling or UniformIssuanceBilling)
+        'billable_id',
+        'billable_type',
+
+        // Morph: the source (SmePurchaseOrder or UniformIssuances)
+        'sourceable_id',
+        'sourceable_type',
+
+        // Shared
         'employee_name',
         'dr_number',
         'date_signed',
@@ -21,18 +31,38 @@ class BillingDr extends Model
         'date_signed' => 'date',
     ];
 
-    public function issuance(): BelongsTo
+    /**
+     * The billing this DR belongs to.
+     * Morphs to: SmeBilling | UniformIssuanceBilling
+     */
+    public function billable(): MorphTo
     {
-        return $this->belongsTo(UniformIssuances::class, 'uniform_issuance_id');
+        return $this->morphTo();
     }
 
-    public function billing(): BelongsTo
+    /**
+     * The source document this DR came from.
+     * Morphs to: SmePurchaseOrder | UniformIssuances
+     */
+    public function sourceable(): MorphTo
     {
-        return $this->belongsTo(UniformIssuanceBilling::class, 'uniform_issuance_billing_id');
+        return $this->morphTo();
     }
 
     public function uploader(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'uploaded_by');
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    // ── Scopes ──
+
+    public function scopeForSme($query)
+    {
+        return $query->where('sourceable_type', SmePurchaseOrder::class);
+    }
+
+    public function scopeForUniform($query)
+    {
+        return $query->where('sourceable_type', UniformIssuances::class);
     }
 }

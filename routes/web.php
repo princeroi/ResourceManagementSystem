@@ -47,3 +47,8 @@ Route::get('/private-image/{disk}/{path}', function ($disk, $path) {
     return response()->file(storage_path('app/private/' . $path));
 })->middleware('auth')->name('private.image');
 
+use App\Http\Controllers\AssetPropertyTagController;
+Route::get('/assets/print-property-tags', [AssetPropertyTagController::class, 'bulk'])
+    ->name('assets.property-tags.bulk')
+    ->middleware('auth');
+

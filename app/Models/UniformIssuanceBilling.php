@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class UniformIssuanceBilling extends Model
 {
@@ -25,6 +27,11 @@ class UniformIssuanceBilling extends Model
         'total_price'           => 'decimal:2'
     ];
 
+    public function uniformIssuance(): BelongsTo
+    {
+        return $this->belongsTo(UniformIssuances::class, 'uniform_issuance_id', 'id');
+    }
+
     public function issuance() : BelongsTo
     {
         return $this->belongsTo(UniformIssuances::class, 'uniform_issuance_id');
@@ -40,8 +47,18 @@ class UniformIssuanceBilling extends Model
         return $this->hasMany(BillingAtd::class, 'uniform_issuance_billing_id');
     }
 
-    public function billingDrs() : HasMany
+    // public function billingDrs() : HasMany
+    // {
+    //     return $this->hasMany(BillingDr::class, 'uniform_issuance_billing_id');
+    // }
+
+    public function billingInclude(): MorphOne
     {
-        return $this->hasMany(BillingDr::class, 'uniform_issuance_billing_id');
+        return $this->morphOne(BillingInclude::class, 'includeable');
+    }
+
+    public function billingDrs(): MorphMany
+    {
+        return $this->morphMany(BillingDr::class, 'billable');
     }
 }

@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use \Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class UniformIssuances extends Model
 {
+    
     protected $fillable = [
         'site_id',
         'uniform_issuance_type_id',
@@ -45,5 +47,9 @@ class UniformIssuances extends Model
         return $this->hasMany(UniformIssuanceLog::class, 'uniform_issuance_id');
     }
 
+    public function billingDrs(): MorphMany
+    {
+        return $this->morphMany(BillingDr::class, 'sourceable');
+    }
     
 }

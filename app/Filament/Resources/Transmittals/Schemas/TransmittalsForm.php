@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Transmittals\Schemas;
 
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -14,14 +15,18 @@ class TransmittalsForm
     {
         return $schema
             ->components([
-                TextInput::make('uniform_issuance_id')
-                    ->numeric(),
-                TextInput::make('transmittal_number')
-                    ->required(),
-                TextInput::make('transmitted_by')
-                    ->required(),
-                TextInput::make('transmitted_to')
-                    ->required(),
+                Grid::make(2)
+                    ->schema([
+                        TextInput::make('uniform_issuance_id')
+                            ->numeric(),
+                        TextInput::make('transmittal_number')
+                            ->required(),
+                        TextInput::make('transmitted_by')
+                            ->required(),
+                        TextInput::make('transmitted_to')
+                            ->required(),
+                    ]),
+
                 Repeater::make('items_summary')
                     ->label('Items Summary')
                     ->schema([
@@ -44,15 +49,20 @@ class TransmittalsForm
                     ->minItems(1)
                     ->defaultItems(1)
                     ->collapsible()
-                    ->cloneable(),
-                TextInput::make('purpose'),
-                TextInput::make('instructions'),
-                DatePicker::make('transmitted_at')
-                    ->required(),
-                Select::make('status')
-                    ->options(['pending' => 'Pending', 'received' => 'Received'])
-                    ->default('pending')
-                    ->required(),
+                    ->cloneable()
+                    ->columnSpanFull(),
+
+                Grid::make(2)
+                    ->schema([
+                        TextInput::make('purpose'),
+                        TextInput::make('instructions'),
+                        DatePicker::make('transmitted_at')
+                            ->required(),
+                        Select::make('status')
+                            ->options(['pending' => 'Pending', 'received' => 'Received'])
+                            ->default('pending')
+                            ->required(),
+                    ]),
             ]);
     }
 }

@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListUniformIssuanceBillings extends ListRecords
 {
+    public ?string $activeBillingType = 'client';
+
     protected static string $resource = UniformIssuanceBillingResource::class;
 
     protected function getHeaderActions(): array

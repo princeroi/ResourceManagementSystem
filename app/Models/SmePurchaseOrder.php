@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class SmePurchaseOrder extends Model
 {
@@ -55,6 +56,11 @@ class SmePurchaseOrder extends Model
     public function purchaseOrderItems() : HasMany {
         return $this->hasMany(SmePurchaseOrderItems::class, 'sme_purchase_order_id', 'id');
     }
+
+    public function billingDrs(): MorphMany
+{
+    return $this->morphMany(BillingDr::class, 'sourceable');
+}
 }
 
     

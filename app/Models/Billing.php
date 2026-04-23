@@ -43,4 +43,9 @@ class Billing extends Model
     public function getRemainingBalanceAttribute() {
         return $this->total_amount - $this->total_paid;
     }
+
+    public function includes(): HasMany
+    {
+        return $this->hasMany(BillingInclude::class);
+    }
 }
