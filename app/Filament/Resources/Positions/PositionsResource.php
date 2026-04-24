@@ -18,7 +18,7 @@ class PositionsResource extends Resource
 {
     protected static ?string $model = Positions::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-briefcase';
 
     public static function getNavigationGroup(): ?string
     {

@@ -20,7 +20,12 @@ class OfficeSupplyItemResource extends Resource
 {
     protected static ?string $model = OfficeSupplyItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-paperclip';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Item Setup';
+    }
 
     public static function form(Schema $schema): Schema
     {

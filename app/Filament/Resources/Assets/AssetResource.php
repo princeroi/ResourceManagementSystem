@@ -20,7 +20,12 @@ class AssetResource extends Resource
 {
     protected static ?string $model = Asset::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-computer';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Item Setup';
+    }
 
     public static function form(Schema $schema): Schema
     {

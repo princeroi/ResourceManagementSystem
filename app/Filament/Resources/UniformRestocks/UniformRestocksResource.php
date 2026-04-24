@@ -18,7 +18,7 @@ class UniformRestocksResource extends Resource
 {
     protected static ?string $model = UniformRestocks::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowLeftEndOnRectangle;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-cart-plus';
 
     public static function getNavigationGroup(): ?string
     {

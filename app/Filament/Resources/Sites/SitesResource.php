@@ -18,7 +18,7 @@ class SitesResource extends Resource
 {
     protected static ?string $model = Sites::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-location-dot';
 
     public static function getNavigationGroup(): ?string
     {

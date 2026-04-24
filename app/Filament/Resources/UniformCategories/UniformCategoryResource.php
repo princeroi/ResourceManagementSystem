@@ -18,7 +18,7 @@ class UniformCategoryResource extends Resource
 {
     protected static ?string $model = UniformCategory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-bookmark';
 
     public static function getNavigationGroup(): ?string
     {

@@ -18,7 +18,7 @@ class ForDeliveryReceiptResource extends Resource
 {
     protected static ?string $model = ForDeliveryReceipt::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-receipt';
     
     public static function getNavigationBadge(): ?string
     {

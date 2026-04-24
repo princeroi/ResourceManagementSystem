@@ -18,7 +18,7 @@ class BillingResource extends Resource
 {
     protected static ?string $model = Billing::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-file-invoice';
 
     public static function getNavigationBadge(): ?string
     {

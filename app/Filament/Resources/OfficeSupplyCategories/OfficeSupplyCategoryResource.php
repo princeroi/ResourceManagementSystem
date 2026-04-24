@@ -18,7 +18,12 @@ class OfficeSupplyCategoryResource extends Resource
 {
     protected static ?string $model = OfficeSupplyCategory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-bookmark';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Item Setup';
+    }
 
     public static function form(Schema $schema): Schema
     {

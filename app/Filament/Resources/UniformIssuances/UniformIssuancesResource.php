@@ -18,7 +18,7 @@ class UniformIssuancesResource extends Resource
 {
     protected static ?string $model = UniformIssuances::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowRightStartOnRectangle;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-right-from-bracket';
 
     public static function getNavigationBadge(): ?string
     {

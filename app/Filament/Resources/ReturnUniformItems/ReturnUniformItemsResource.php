@@ -18,7 +18,7 @@ class ReturnUniformItemsResource extends Resource
 {
     protected static ?string $model = ReturnUniformItems::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ArrowUturnLeft;
 
     public static function getNavigationBadge(): ?string
     {

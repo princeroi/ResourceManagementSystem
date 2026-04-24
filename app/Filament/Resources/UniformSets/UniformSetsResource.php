@@ -18,7 +18,7 @@ class UniformSetsResource extends Resource
 {
     protected static ?string $model = UniformSets::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-layer-group';
 
     protected static ?string $recordTitleAttribute = '\\';
 

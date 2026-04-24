@@ -20,7 +20,7 @@ class SmeItemsResource extends Resource
 {
     protected static ?string $model = SmeItems::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquare3Stack3d;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-boxes-stacked';
 
     public static function getNavigationGroup(): ?string
     {

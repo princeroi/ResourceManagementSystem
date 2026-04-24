@@ -20,7 +20,7 @@ class UniformItemsResource extends Resource
 {
     protected static ?string $model = UniformItems::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquare3Stack3d;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-shirt';
 
     public static function getNavigationGroup(): ?string
     {

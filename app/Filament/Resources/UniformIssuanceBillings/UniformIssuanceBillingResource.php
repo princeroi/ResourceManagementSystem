@@ -18,7 +18,7 @@ class UniformIssuanceBillingResource extends Resource
 {
     protected static ?string $model = UniformIssuanceBilling::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-shirt';
 
     public static function getNavigationBadge(): ?string
     {

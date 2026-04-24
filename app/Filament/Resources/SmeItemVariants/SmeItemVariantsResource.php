@@ -18,7 +18,7 @@ class SmeItemVariantsResource extends Resource
 {
     protected static ?string $model = SmeItemVariants::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartLine;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-chart-line';
 
     protected static ?string $navigationLabel = 'SME Stock';
 

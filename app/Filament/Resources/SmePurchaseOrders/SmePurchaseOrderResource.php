@@ -18,7 +18,7 @@ class SmePurchaseOrderResource extends Resource
 {
     protected static ?string $model = SmePurchaseOrder::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-shopping-basket';
 
     public static function getNavigationBadge(): ?string
     {

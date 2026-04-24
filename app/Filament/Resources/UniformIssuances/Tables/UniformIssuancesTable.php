@@ -37,7 +37,13 @@ class UniformIssuancesTable
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('uniform_issuance_status')
-                    ->badge(),
+                    ->badge()
+                    ->colors([
+                        'success' => 'issued',
+                        'primary' => 'partial',
+                        'warning' => 'pending',
+                        'danger'  => 'cancelled',
+                    ]),
                 TextColumn::make('status_date')
                     ->label('Date')
                     ->date()

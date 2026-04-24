@@ -20,10 +20,26 @@ class UniformItemVariantsResource extends Resource
 {
     protected static ?string $model = UniformItemVariants::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartLine;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-chart-line';
 
     protected static ?string $navigationLabel = 'Uniform Stock';
     
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::query()
+            ->get()
+            ->filter(function ($record) {
+                return $record->uniform_item_quantity == 0
+                    || $record->uniform_item_quantity <= $record->moq;
+            })
+            ->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger'; // red
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return 'Stock & Inventory';

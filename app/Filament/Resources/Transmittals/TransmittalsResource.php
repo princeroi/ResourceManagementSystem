@@ -18,7 +18,7 @@ class TransmittalsResource extends Resource
 {
     protected static ?string $model = Transmittals::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTopRightOnSquare;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-file-export';
 
     public static function getNavigationBadge(): ?string
     {

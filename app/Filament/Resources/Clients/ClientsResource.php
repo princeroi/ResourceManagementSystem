@@ -11,14 +11,15 @@ use App\Models\Clients;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+// use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+// use Filament\Support\Enums\Icon;
 
 class ClientsResource extends Resource
 {
     protected static ?string $model = Clients::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-building';
 
     public static function form(Schema $schema): Schema
     {

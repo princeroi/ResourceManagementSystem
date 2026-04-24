@@ -18,7 +18,24 @@ class SmeBillingResource extends Resource
 {
     protected static ?string $model = SmeBilling::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'fas-boxes-stacked';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::where('status', 'pending')->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger'; // red
+    }
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Billing Management';
+    }
 
     public static function form(Schema $schema): Schema
     {

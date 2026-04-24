@@ -32,6 +32,36 @@ class UniformItemVariantsTable
                 TextColumn::make('uniform_item_quantity')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('moq')
+                    ->label('MOQ')
+                    ->badge()
+                    ->color(fn ($record) =>
+                        $record->uniform_item_quantity == 0
+                            ? 'danger'
+                            : ($record->uniform_item_quantity <= $record->moq
+                                ? 'warning'
+                                : 'success')
+                    )
+                    ->formatStateUsing(fn ($record) =>
+                        $record->moq
+                    )
+                    ->sortable(),
+                TextColumn::make('stock_status')
+                    ->badge()
+                    ->color(fn ($record) =>
+                        $record->uniform_item_quantity == 0
+                            ? 'danger'
+                            : ($record->uniform_item_quantity <= $record->moq
+                                ? 'warning'
+                                : 'success')
+                    )
+                    ->getStateUsing(fn ($record) =>
+                        $record->uniform_item_quantity == 0
+                            ? 'No Stock'
+                            : ($record->uniform_item_quantity <= $record->moq
+                                ? 'Low Stock'
+                                : 'Enough Stock')
+                    ),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
