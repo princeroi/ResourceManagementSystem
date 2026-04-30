@@ -1,5 +1,4 @@
 <?php
-// app/Models/OfficeSupplyItem.php
 
 namespace App\Models;
 
@@ -37,5 +36,16 @@ class OfficeSupplyItem extends Model
     public function requestItems(): HasMany
     {
         return $this->hasMany(OfficeSupplyRequestItem::class, 'item_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (OfficeSupplyItem $item) {
+            $item->variants()->each(fn($variant) => $variant->delete());
+        });
+
+        static::restoring(function (OfficeSupplyItem $item) {
+            $item->variants()->withTrashed()->each(fn($variant) => $variant->restore());
+        });
     }
 }

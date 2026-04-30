@@ -27,9 +27,6 @@ class UniformRestocksTable
                     ->searchable(),
                 TextColumn::make('ordered_by')
                     ->searchable(),
-                TextColumn::make('ordered_at')
-                    ->date()
-                    ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn ($state) => match($state) {
@@ -37,6 +34,7 @@ class UniformRestocksTable
                         'partial'   => 'info',
                         'delivered' => 'success',
                         'cancelled' => 'danger',
+                        'returned'  => 'danger',
                         default     => 'gray',
                     }),
                 TextColumn::make('status_date')
@@ -49,6 +47,7 @@ class UniformRestocksTable
                                 WHEN 'partial'   THEN partial_at
                                 WHEN 'delivered' THEN delivered_at
                                 WHEN 'cancelled' THEN cancelled_at
+                                WHEN 'returned'  THEN returned_at
                                 ELSE NULL
                             END {$direction}
                         ");
@@ -58,6 +57,7 @@ class UniformRestocksTable
                         'partial'   => $record->partial_at,
                         'delivered' => $record->delivered_at,
                         'cancelled' => $record->cancelled_at,
+                        'returned'  => $record->returned_at,
                         default     => null,
                     }),
                 TextColumn::make('created_at')
@@ -201,7 +201,6 @@ class UniformRestocksTable
 
                                 $variant = UniformItemVariants::find($item->uniform_item_variant_id);
                                 if ($variant) {
-                                    // Capture BEFORE incrementing
                                     $stockBefore = (int) $variant->uniform_item_quantity;
                                     $variant->increment('uniform_item_quantity', $deliver);
                                     $stockAfter = $stockBefore + $deliver;
@@ -255,6 +254,7 @@ class UniformRestocksTable
 
                 // ─── RETURN ITEM: partial or delivered ─────────────────────
                 // For defectives / wrong items. Deducts from inventory.
+                // Status is NOT changed — only logged.
                 Action::make('return_item')
                     ->label('Return')
                     ->color('warning')
@@ -351,7 +351,8 @@ class UniformRestocksTable
                         }
 
                         // ── Apply ──────────────────────────────────────────
-                        $noteRows = [];
+                        $noteRows     = [];
+                        $statusBefore = $record->status;
 
                         foreach ($returns as $row) {
                             $restockItemId = (int) ($row['restock_item_id'] ?? 0);
@@ -368,7 +369,6 @@ class UniformRestocksTable
 
                             $variant = UniformItemVariants::find($restockItem->uniform_item_variant_id);
                             if ($variant) {
-                                // Capture BEFORE decrementing
                                 $stockBefore = (int) $variant->uniform_item_quantity;
                                 $variant->decrement('uniform_item_quantity', $returnQty);
                                 $stockAfter = $stockBefore - $returnQty;
@@ -387,35 +387,42 @@ class UniformRestocksTable
                             ];
                         }
 
-                        // Recalculate status after returns
-                        $record->refresh();
-                        $totalDelivered = $record->uniformRestockItem->sum('delivered_quantity');
-                        $totalRemaining = $record->uniformRestockItem->sum('remaining_quantity');
+                        // ── Check if ALL items are fully returned ──────────
+                        $record->load('uniformRestockItem'); // refresh collection
+                        $allReturned = $record->uniformRestockItem->every(
+                            fn ($item) => (int) $item->delivered_quantity === 0
+                        );
 
-                        $newStatus = $totalDelivered === 0
-                            ? 'pending'
-                            : ($totalRemaining > 0 ? 'partial' : 'delivered');
+                        $newStatus = $allReturned ? 'returned' : $statusBefore;
 
                         $record->update([
-                            'status'       => $newStatus,
-                            'partial_at'   => $newStatus === 'partial'   ? now()->toDateString() : $record->partial_at,
-                            'delivered_at' => $newStatus === 'delivered' ? now()->toDateString() : null,
+                            'status'      => $newStatus,
+                            'returned_at' => $allReturned ? now()->toDateString() : null,
                         ]);
 
+                        // ── Log ────────────────────────────────────────────
                         UniformRestockLogs::create([
                             'uniform_restock_id' => $record->id,
                             'user_id'            => Auth::id(),
                             'action'             => 'returned',
-                            'status_from'        => $record->getOriginal('status'),
+                            'status_from'        => $statusBefore,
                             'status_to'          => $newStatus,
                             'note'               => json_encode($noteRows),
                         ]);
 
-                        Notification::make()
-                            ->title('Items Returned')
-                            ->body(count($noteRows) . ' item(s) returned and deducted from inventory.')
-                            ->warning()
-                            ->send();
+                        if ($allReturned) {
+                            Notification::make()
+                                ->title('Fully Returned')
+                                ->body('All delivered items have been returned. Status set to Returned.')
+                                ->danger()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Items Returned')
+                                ->body(count($noteRows) . ' item(s) returned and deducted from inventory.')
+                                ->warning()
+                                ->send();
+                        }
                     }),
 
                 // ─── CANCEL: only when pending ─────────────────────────────
@@ -541,6 +548,11 @@ class UniformRestocksTable
                                 }
                             }
 
+                            // Show "no change" label when status_from === status_to (e.g. return)
+                            $statusLine = $from === $to
+                                ? "<span style='color:#9ca3af;font-style:italic;'>no status change</span>"
+                                : "{$from} → {$to}";
+
                             return "
                                 <tr>
                                     <td style='padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top;'>
@@ -551,7 +563,7 @@ class UniformRestocksTable
                                         <span style='background:{$badgeColor};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;'>{$action}</span>
                                     </td>
                                     <td style='padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top;'>
-                                        <div style='font-size:11px;color:#374151;'>{$from} → {$to}</div>
+                                        <div style='font-size:11px;color:#374151;'>{$statusLine}</div>
                                         {$itemsHtml}
                                     </td>
                                 </tr>";

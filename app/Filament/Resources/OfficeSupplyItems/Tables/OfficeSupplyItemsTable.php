@@ -18,15 +18,17 @@ class OfficeSupplyItemsTable
     {
         return $table
             ->columns([
-                TextColumn::make('office_supply_category_id')
-                    ->numeric()
-                    ->sortable(),
+                ImageColumn::make('office_supply_image')
+                    ->circular(),
+                TextColumn::make('category.office_supply_category_name')
+                    ->label('Category')
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('office_supply_name')
                     ->searchable(),
                 TextColumn::make('office_supply_price')
                     ->money()
                     ->sortable(),
-                ImageColumn::make('office_supply_image'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

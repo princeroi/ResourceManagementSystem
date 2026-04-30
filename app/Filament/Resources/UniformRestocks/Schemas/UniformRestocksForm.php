@@ -25,10 +25,6 @@ class UniformRestocksForm
                     ->label('Ordered By')
                     ->required(),
 
-                DatePicker::make('ordered_at')
-                    ->label('Order Date')
-                    ->required(),
-
                 Select::make('status')
                     ->options([
                         'pending'   => 'Pending',
@@ -73,7 +69,6 @@ class UniformRestocksForm
 
                 Textarea::make('notes')
                     ->label('Notes')
-                    ->required()
                     ->columnSpanFull(),
 
                 // ── Items Repeater ─────────────────────────────────────────

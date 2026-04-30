@@ -18,6 +18,7 @@ class ListUniformIssuances extends ListRecords
     {
         return [
             CreateAction::make()
+            
                 ->extraAttributes([
                     'style' => 'color: #ffffff;'
                 ])

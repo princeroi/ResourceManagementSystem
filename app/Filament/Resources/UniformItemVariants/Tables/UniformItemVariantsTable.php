@@ -450,7 +450,7 @@ class UniformItemVariantsTable
                                 <div style='padding:6px 0 10px;'>{$legendHtml}</div>
 
                                 <!-- Table -->
-                                <div style='max-height:520px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;'>
+                                <div style='max-height:520px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;'>
                                     <table style='width:100%;border-collapse:collapse;'>
                                         <thead style='position:sticky;top:0;z-index:1;'>
                                             <tr style='background:#1e3a5f;'>

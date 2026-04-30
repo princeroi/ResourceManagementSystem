@@ -8,7 +8,7 @@
 @source '../../../../resources/views/filament/**/*';
 
 /* =============================================================
-   ✦ ROOT
+   ✦ ROOT — Light
 ============================================================= */
 :root {
     --color-primary-500: 22 109 245;
@@ -41,6 +41,28 @@
 }
 
 /* =============================================================
+   ✦ ROOT — Dark
+============================================================= */
+.dark {
+    --cl-canvas: #0b0f1a;
+    --cl-base: #111827;
+    --cl-sunken: #0d1220;
+    --cl-tinted: #141c2e;
+    --cl-overlay: rgba(17,24,39,0.96);
+
+    --cl-text: #e8edf7;
+    --cl-text-2: #94a3b8;
+    --cl-text-3: #4d6080;
+
+    --cl-border: rgba(22,109,245,0.15);
+    --cl-border-strong: rgba(22,109,245,0.30);
+
+    --cl-shadow-sm: 0 6px 18px rgba(0,0,0,0.30);
+    --cl-shadow-md: 0 12px 30px rgba(0,0,0,0.40);
+    --cl-shadow-lg: 0 24px 60px rgba(0,0,0,0.50);
+}
+
+/* =============================================================
    ✦ BASE
 ============================================================= */
 body {
@@ -57,10 +79,16 @@ body {
    ✦ TOPBAR
 ============================================================= */
 .fi-topbar {
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(14px);
-    border: 1px solid var(--cl-border);
-    box-shadow: var(--cl-shadow-sm);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dark .fi-topbar {
+    background: rgba(17, 24, 39, 0.60);
+    border-color: var(--cl-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.30);
 }
 
 /* =============================================================
@@ -69,6 +97,11 @@ body {
 .fi-sidebar {
     background: #edf3ff;
     border: 1px solid var(--cl-border);
+}
+
+.dark .fi-sidebar {
+    background: #0f1623;
+    border-color: var(--cl-border);
 }
 
 .fi-sidebar-item {
@@ -85,6 +118,11 @@ body {
     color: rgb(var(--color-primary-600));
 }
 
+.dark .fi-sidebar-item:hover > a {
+    background: rgba(22,109,245,0.12);
+    color: rgb(var(--color-primary-500));
+}
+
 /* ACTIVE */
 .fi-sidebar-item-active > a,
 .fi-sidebar-item.fi-active > a {
@@ -95,6 +133,16 @@ body {
     );
     color: rgb(var(--color-primary-700));
     font-weight: 600;
+}
+
+.dark .fi-sidebar-item-active > a,
+.dark .fi-sidebar-item.fi-active > a {
+    background: linear-gradient(
+        90deg,
+        rgba(22,109,245,0.25),
+        rgba(22,109,245,0.07)
+    );
+    color: rgb(var(--color-primary-500));
 }
 
 .fi-sidebar-item-active::before {
@@ -124,6 +172,8 @@ body {
     box-shadow: var(--cl-shadow-sm);
 }
 
+/* Cards already use --cl-base, so dark vars cover this automatically */
+
 /* =============================================================
    ✦ TABLES
 ============================================================= */
@@ -142,10 +192,76 @@ body {
 .fi-ta-table td {
     border-bottom: 1px solid var(--cl-border);
     font-weight: 500;
+    color: var(--cl-text);
+}
+
+.fi-ta-table tbody tr {
+    background: var(--cl-base);
 }
 
 .fi-ta-table tbody tr:hover {
     background: rgba(22,109,245,0.04);
+}
+
+/* ── Table wrapper & container — force blue-tinted dark surfaces ── */
+.dark .fi-ta-ctn,
+.dark [class*="fi-ta-"] {
+    background: #0d1525;
+}
+
+/* Table itself */
+.dark .fi-ta-table {
+    background: transparent;
+}
+
+/* Header row — slightly elevated blue-tinted surface */
+.dark .fi-ta-table thead tr {
+    background: #0f1a2e;
+}
+
+.dark .fi-ta-table thead th {
+    background: #0f1a2e;
+    color: #4d7ab5;
+    border-bottom-color: rgba(22,109,245,0.18);
+}
+
+/* Body rows — base blue-dark surface */
+.dark .fi-ta-table tbody tr {
+    background: #0d1525;
+}
+
+/* Alternating row tint for depth */
+.dark .fi-ta-table tbody tr:nth-child(even) {
+    background: #101c30;
+}
+
+/* Hover — brighter blue tint */
+.dark .fi-ta-table tbody tr:hover {
+    background: rgba(22,109,245,0.12);
+}
+
+/* Cells */
+.dark .fi-ta-table td {
+    color: #c8d8f0;
+    border-bottom-color: rgba(22,109,245,0.10);
+}
+
+/* Empty state row */
+.dark .fi-ta-table tbody tr.fi-ta-empty-state {
+    background: #0d1525;
+}
+
+/* Table footer / pagination wrapper */
+.dark .fi-ta-footer,
+.dark .fi-ta-header {
+    background: #0b1120;
+    border-color: rgba(22,109,245,0.12);
+}
+
+/* Selected row */
+.dark .fi-ta-table tbody tr[class*="selected"],
+.dark .fi-ta-table tbody tr.fi-selected {
+    background: rgba(22,109,245,0.18);
 }
 
 /* =============================================================
@@ -178,6 +294,7 @@ body {
 .fi-btn-secondary {
     background: var(--cl-base);
     border: 1px solid var(--cl-border);
+    color: var(--cl-text);
 }
 
 /* =============================================================
@@ -188,11 +305,22 @@ body {
 .fi-fo-field select,
 .fi-fo-field textarea {
     font-weight: 500;
-    border: 1px solid var(--cl-border);
-    border-radius: var(--cl-r-md);
+    background: var(--cl-base);
+    color: var(--cl-text);
+    border-color: var(--cl-border);
 }
 
-.fi-input:focus {
+.dark .fi-input,
+.dark .fi-fo-field input,
+.dark .fi-fo-field select,
+.dark .fi-fo-field textarea {
+    background: var(--cl-sunken);
+    color: var(--cl-text);
+    border-color: var(--cl-border);
+}
+
+.fi-input:focus,
+.dark .fi-input:focus {
     border-color: rgb(var(--color-primary-500));
     box-shadow: 0 0 0 3px rgba(22,109,245,0.15);
 }
@@ -214,6 +342,7 @@ body {
 
 .fi-modal-header {
     border-bottom: 1px solid var(--cl-border);
+    color: var(--cl-text);
 }
 
 .fi-modal-footer {
@@ -229,14 +358,20 @@ body {
     color: rgb(var(--color-accent-600));
 }
 
+.dark .fi-badge[data-color="warning"] {
+    background: rgba(249,115,22,0.18);
+    color: rgb(249 115 22);
+}
+
 /* =============================================================
    ✦ DROPDOWN
 ============================================================= */
 .fi-dropdown-panel {
-    background: #fff;
+    background: var(--cl-base);
     border: 1px solid var(--cl-border);
     border-radius: var(--cl-r-md);
     box-shadow: var(--cl-shadow-md);
+    color: var(--cl-text);
 }
 
 /* =============================================================
@@ -254,12 +389,10 @@ body {
     background: transparent;
 }
 
-/* vertical */
 ::-webkit-scrollbar:vertical {
     width: 6px;
 }
 
-/* horizontal */
 ::-webkit-scrollbar:horizontal {
     height: 6px;
 }
@@ -268,7 +401,6 @@ body {
     border-radius: 999px;
 }
 
-/* vertical thumb */
 ::-webkit-scrollbar-thumb:vertical {
     background: linear-gradient(
         to bottom,
@@ -277,7 +409,6 @@ body {
     );
 }
 
-/* horizontal thumb */
 ::-webkit-scrollbar-thumb:horizontal {
     background: linear-gradient(
         to right,

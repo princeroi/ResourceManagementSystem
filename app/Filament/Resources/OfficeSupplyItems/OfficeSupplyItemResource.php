@@ -48,8 +48,6 @@ class OfficeSupplyItemResource extends Resource
     {
         return [
             'index' => ListOfficeSupplyItems::route('/'),
-            'create' => CreateOfficeSupplyItem::route('/create'),
-            'edit' => EditOfficeSupplyItem::route('/{record}/edit'),
         ];
     }
 
